@@ -12,108 +12,25 @@ Tell us what you're teaching and when — Scolaris will build your curriculum au
 # Upload calendar
 uploaded_calendar = st.file_uploader("📅 Upload your school calendar (.csv with a 'Date' column)", type=["csv"])
 
-# Input fields
-subject = st.text_input("📘 What subject are you teaching?")
-grade = st.selectbox("🎓 Grade Level", [f"Grade {i}" for i in range(1, 13)])
-pacing = st.radio("⏱️ How fast do you want to move?", ["Slow", "Normal", "Fast"])
-selected_days = st.multiselect("🗓️ On which days do you teach this subject?", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-
 # Internal topic mapping database
 sample_curricula = {
-    ("World History", "Grade 9"): [
-        "Origins of Civilization",
-        "Ancient Mesopotamia and Egypt",
-        "Classical Greece and Rome",
-        "Medieval Europe",
-        "Islamic Caliphates",
-        "Renaissance and Reformation",
-        "Age of Exploration",
-        "Industrial Revolution",
-        "World Wars",
-        "Post-Colonial Independence Movements"
-    ],
-    ("Biology", "Grade 10"): [
-        "Scientific Method & Lab Safety",
-        "Cell Structure and Function",
-        "Genetics",
-        "Evolution",
-        "Ecology",
-        "Human Body Systems"
-    ],
-    ("English", "Grade 8"): [
-        "Short Stories",
-        "Poetry and Figurative Language",
-        "Drama - Shakespeare",
-        "Persuasive Writing",
-        "Research Project",
-        "Novel Study"
-    ],
-    ("Navi: Yehoshua", "Grade 9"): [
-        "Introduction to Navi & Sefer Yehoshua",
-        "Crossing the Jordan",
-        "Conquest of Jericho",
-        "Achan and the Battle of Ai",
-        "The Givonim Deception",
-        "Southern Campaign",
-        "Northern Campaign",
-        "Division of the Land",
-        "Cities of Refuge",
-        "Final Address of Yehoshua"
-    ],
-    ("Navi: Shoftim", "Grade 9"): [
-        "Overview of the Era of Shoftim",
-        "Devorah and Barak",
-        "Gideon and the Midianites",
-        "Yiftach and His Vow",
-        "Shimshon the Judge",
-        "Tribe of Dan’s Idolatry",
-        "Pilegesh B’Givah and Civil War"
-    ],
-    ("Navi: Shmuel I", "Grade 9"): [
-        "Introduction to Sefer Shmuel",
-        "Birth of Shmuel",
-        "The Call of Shmuel",
-        "Eli and the Ark",
-        "Shaul’s Rise as King",
-        "War with Amalek",
-        "David and Goliath",
-        "Shaul’s Jealousy",
-        "David’s Fugitive Years",
-        "Shaul’s Downfall"
-    ],
-    ("Navi: Shmuel II", "Grade 10"): [
-        "David Becomes King",
-        "Conquest of Jerusalem",
-        "Uzzah and the Ark",
-        "David’s Covenant",
-        "Batsheva and Uriah",
-        "Nathan’s Rebuke",
-        "Amnon and Tamar",
-        "Avshalom’s Revolt",
-        "Sheva ben Bichri",
-        "David’s Final Acts"
-    ],
-    ("Navi: Melachim I", "Grade 10"): [
-        "Coronation of Shlomo",
-        "Building the Beit Hamikdash",
-        "Shlomo’s Wisdom",
-        "Downfall of Shlomo",
-        "Division of the Kingdom",
-        "Eliyahu HaNavi and the Drought",
-        "Har HaCarmel Showdown",
-        "Naboth’s Vineyard",
-        "Ahaziah and Fire from Heaven"
-    ],
-    ("Navi: Melachim II", "Grade 10"): [
-        "Elisha’s Miracles",
-        "Siege of Shomron",
-        "Chizkiyahu’s Reforms",
-        "Sancheriv’s Invasion",
-        "Menashe’s Idolatry",
-        "Yoshiyahu’s Torah Discovery",
-        "Destruction of the Temple"
-    ]
+    ("World History", "Grade 9"): [...],
+    ("Biology", "Grade 10"): [...],
+    ("English", "Grade 8"): [...],
+    ("Navi: Yehoshua", "Grade 9"): [...],
+    ("Navi: Shoftim", "Grade 9"): [...],
+    ("Navi: Shmuel I", "Grade 9"): [...],
+    ("Navi: Shmuel II", "Grade 10"): [...],
+    ("Navi: Melachim I", "Grade 10"): [...],
+    ("Navi: Melachim II", "Grade 10"): [...]
 }
+
+# Generate dropdown from database
+subject_options = sorted(set([key[0] for key in sample_curricula.keys()]))
+subject = st.selectbox("📘 What subject are you teaching?", subject_options)
+grade = st.selectbox("🎓 Grade Level", sorted(set([key[1] for key in sample_curricula.keys()])))
+pacing = st.radio("⏱️ How fast do you want to move?", ["Slow", "Normal", "Fast"])
+selected_days = st.multiselect("🗓️ On which days do you teach this subject?", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
 
 # Generate lesson plan
 if st.button("🚀 Build My Curriculum"):
