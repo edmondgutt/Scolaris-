@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Scolaris AI Curriculum Planner", layout="wide")
 
-# ---------- Branding ----------
+# ---------- Styling ----------
 st.markdown("""
 <style>
 .big-title {
@@ -31,33 +31,27 @@ st.markdown("""
     border-radius: 0.5em;
     margin-bottom: 1em;
 }
+.lesson-header {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 0.5em;
+}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="big-title">📚 Scolaris</div>', unsafe_allow_html=True)
-st.markdown("Welcome to your AI-powered curriculum assistant. Upload your school calendar and build your school year in seconds.")
+# ---------- Sidebar Navigation ----------
+st.sidebar.title("🧭 Navigation")
+page = st.sidebar.radio("Go to", ["🏠 Build Curriculum", "📆 Teacher Portal"])
 
-# ---------- Upload Section ----------
-st.markdown("---")
-st.markdown("### 🔼 Upload Your Calendar")
-uploaded_calendar = st.file_uploader("Upload CSV with a 'Date' column", type=["csv"])
+# ---------- Load Curriculum Status ----------
+status_file = "curriculum_status.json"
+if os.path.exists(status_file):
+    with open(status_file, 'r') as f:
+        curriculum_status = json.load(f)
+else:
+    curriculum_status = {}
 
-# ---------- Form Inputs ----------
-st.markdown("---")
-st.markdown("### 🧠 Course Information")
-with st.form("course_form"):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        subject = st.selectbox("📘 Subject", ["Navi: Shmuel I"])
-    with col2:
-        grade = st.selectbox("🎓 Grade", ["Grade 9"])
-    with col3:
-        pacing = st.radio("⏱️ Pacing", ["Slow", "Normal", "Fast"])
-
-    selected_days = st.multiselect("🗓️ Teaching Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], default=["Tuesday", "Thursday"])
-    submitted = st.form_submit_button("🚀 Build My Curriculum")
-
-# ---------- Curriculum Generation Logic ----------
+# ---------- Sample Curriculum Bank ----------
 sample_curricula = {
     ("Navi: Shmuel I", "Grade 9"): [
         "Review of Sefer Shoftim",
@@ -86,73 +80,95 @@ sample_curricula = {
     ]
 }
 
-status_file = "curriculum_status.json"
-if os.path.exists(status_file):
-    with open(status_file, 'r') as f:
-        curriculum_status = json.load(f)
-else:
-    curriculum_status = {}
+# ---------- Page: Build Curriculum ----------
+if page == "🏠 Build Curriculum":
+    st.markdown('<div class="big-title">📚 Scolaris</div>', unsafe_allow_html=True)
+    st.markdown("Build your lesson plan with AI. Upload your calendar, choose your subject and go.")
 
-if submitted:
-    if not uploaded_calendar or not subject or not grade or not selected_days:
-        st.warning("Please complete all fields and upload your calendar.")
+    st.markdown("---")
+    st.markdown("### 🔼 Upload Your Calendar")
+    uploaded_calendar = st.file_uploader("Upload CSV with a 'Date' column", type=["csv"])
+
+    st.markdown("---")
+    st.markdown("### 🧠 Course Information")
+    with st.form("course_form"):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            subject = st.selectbox("📘 Subject", ["Navi: Shmuel I"])
+        with col2:
+            grade = st.selectbox("🎓 Grade", ["Grade 9"])
+        with col3:
+            pacing = st.radio("⏱️ Pacing", ["Slow", "Normal", "Fast"])
+
+        selected_days = st.multiselect("🗓️ Teaching Days", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], default=["Tuesday", "Thursday"])
+        submitted = st.form_submit_button("🚀 Build My Curriculum")
+
+    if submitted:
+        if not uploaded_calendar or not subject or not grade or not selected_days:
+            st.warning("Please complete all fields and upload your calendar.")
+        else:
+            calendar_df = pd.read_csv(uploaded_calendar)
+            calendar_df['Date'] = pd.to_datetime(calendar_df['Date'])
+            calendar_df['Day'] = calendar_df['Date'].dt.day_name()
+            teaching_days = calendar_df[calendar_df['Day'].isin(selected_days)].sort_values('Date').reset_index(drop=True)
+
+            key = (subject.strip(), grade.strip())
+            topics = sample_curricula.get(key, [])
+            multiplier = {"Slow": 3, "Normal": 2, "Fast": 1}[pacing]
+            expanded_topics = []
+            for topic in topics:
+                expanded_topics.extend([topic] * multiplier)
+
+            lesson_plan = []
+            for i, row in teaching_days.iterrows():
+                if i < len(expanded_topics):
+                    topic = expanded_topics[i]
+                else:
+                    topic = "Review / Flex / Assessment"
+
+                lesson_plan.append({
+                    "Date": row['Date'].date().isoformat(),
+                    "Day": row['Day'],
+                    "Topic": topic,
+                    "Activity": "",
+                    "Homework": "",
+                    "Notes": "",
+                    "Status": "Upcoming"
+                })
+
+            curriculum_status[f"{subject} - {grade}"] = lesson_plan
+            with open(status_file, 'w') as f:
+                json.dump(curriculum_status, f)
+            st.success(f"Curriculum for {subject} ({grade}) generated!")
+
+# ---------- Page: Teacher Portal ----------
+elif page == "📆 Teacher Portal":
+    st.markdown('<div class="big-title">📆 Teacher Portal</div>', unsafe_allow_html=True)
+    if not curriculum_status:
+        st.info("No lesson plans found. Please create one on the Curriculum Builder page.")
     else:
-        calendar_df = pd.read_csv(uploaded_calendar)
-        calendar_df['Date'] = pd.to_datetime(calendar_df['Date'])
-        calendar_df['Day'] = calendar_df['Date'].dt.day_name()
-        teaching_days = calendar_df[calendar_df['Day'].isin(selected_days)].sort_values('Date').reset_index(drop=True)
+        class_keys = list(curriculum_status.keys())
+        selected_class = st.selectbox("Select a Class", class_keys)
 
-        key = (subject.strip(), grade.strip())
-        topics = sample_curricula.get(key, [])
+        if selected_class:
+            df = pd.DataFrame(curriculum_status[selected_class])
+            for i, row in enumerate(curriculum_status[selected_class]):
+                with st.expander(f"📅 {row['Date']} ({row['Day']}): {row['Topic']}"):
+                    st.markdown("<div class='lesson-box'>", unsafe_allow_html=True)
+                    activity = st.text_input(f"Class Activity (Row {i})", value=row.get("Activity", ""), key=f"activity_{i}_{selected_class}")
+                    homework = st.text_input(f"Homework (Row {i})", value=row.get("Homework", ""), key=f"homework_{i}_{selected_class}")
+                    notes = st.text_area(f"Notes (Row {i})", value=row.get("Notes", ""), key=f"notes_{i}_{selected_class}")
 
-        multiplier = {"Slow": 3, "Normal": 2, "Fast": 1}[pacing]
-        expanded_topics = []
-        for topic in topics:
-            expanded_topics.extend([topic] * multiplier)
+                    curriculum_status[selected_class][i]["Activity"] = activity
+                    curriculum_status[selected_class][i]["Homework"] = homework
+                    curriculum_status[selected_class][i]["Notes"] = notes
 
-        lesson_plan = []
-        for i, row in teaching_days.iterrows():
-            if i < len(expanded_topics):
-                topic = expanded_topics[i]
-            else:
-                topic = "Review / Flex / Assessment"
+                    if st.button(f"✅ Mark as Taught (Row {i})"):
+                        curriculum_status[selected_class][i]["Status"] = "Completed"
+                    if st.button(f"❌ Skip (Row {i})"):
+                        curriculum_status[selected_class][i]["Status"] = "Missed"
 
-            lesson_plan.append({
-                "Date": row['Date'].date().isoformat(),
-                "Day": row['Day'],
-                "Topic": topic,
-                "Activity": "",
-                "Homework": "",
-                "Notes": "",
-                "Status": "Upcoming"
-            })
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-        curriculum_status[subject] = lesson_plan
-        with open(status_file, 'w') as f:
-            json.dump(curriculum_status, f)
-        st.success("Curriculum generated!")
-
-# ---------- Portal View ----------
-st.markdown("---")
-st.markdown("### 🧑‍🏫 Teacher Portal")
-if subject in curriculum_status:
-    for i, row in enumerate(curriculum_status[subject]):
-        with st.expander(f"📅 {row['Date']} ({row['Day']}): {row['Topic']}"):
-            st.markdown("<div class='lesson-box'>", unsafe_allow_html=True)
-            activity = st.text_input(f"Class Activity (Row {i})", value=row.get("Activity", ""), key=f"activity_{i}")
-            homework = st.text_input(f"Homework (Row {i})", value=row.get("Homework", ""), key=f"homework_{i}")
-            notes = st.text_area(f"Notes (Row {i})", value=row.get("Notes", ""), key=f"notes_{i}")
-
-            curriculum_status[subject][i]["Activity"] = activity
-            curriculum_status[subject][i]["Homework"] = homework
-            curriculum_status[subject][i]["Notes"] = notes
-
-            if st.button(f"✅ Mark as Taught (Row {i})"):
-                curriculum_status[subject][i]["Status"] = "Completed"
-            if st.button(f"❌ Skip (Row {i})"):
-                curriculum_status[subject][i]["Status"] = "Missed"
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-    with open(status_file, 'w') as f:
-        json.dump(curriculum_status, f)
+            with open(status_file, 'w') as f:
+                json.dump(curriculum_status, f)
