@@ -25,8 +25,8 @@ st.markdown("""
     margin-bottom: 1em;
 }
 .lesson-box {
-    background-color: #f7f9fc;
-    border-left: 6px solid #2F80ED;
+    background-color: #ffffff;
+    border: 1px solid #d3d3d3;
     padding: 1em;
     border-radius: 0.5em;
     margin-bottom: 1em;
@@ -35,6 +35,12 @@ st.markdown("""
     font-weight: bold;
     font-size: 1.2em;
     margin-bottom: 0.5em;
+}
+.add-item {
+    background: #f0f0f0;
+    padding: 0.5em;
+    border-radius: 0.5em;
+    margin-top: 0.5em;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -55,8 +61,7 @@ else:
 sample_curricula = {
     ("Navi: Shmuel I", "Grade 9"): [
         "Review of Sefer Shoftim",
-        "Perek 1 (Pasukim 1–11): Chana's Tefillah",
-        "Perek 1 (Pasukim 12–28): Birth of Shmuel",
+        "Perek 1: Chana's Tefillah & Birth of Shmuel",
         "Perek 2: Corruption of Bnei Eli",
         "Perek 3: Shmuel’s First Nevuah",
         "Perek 4: War & Capture of Aron",
@@ -131,7 +136,6 @@ if page == "🏠 Build Curriculum":
                     "Day": row['Day'],
                     "Topic": topic,
                     "Activity": "",
-                    "Homework": "",
                     "Notes": "",
                     "Status": "Upcoming"
                 })
@@ -156,18 +160,15 @@ elif page == "📆 Teacher Portal":
                 with st.expander(f"📅 {row['Date']} ({row['Day']}): {row['Topic']}"):
                     st.markdown("<div class='lesson-box'>", unsafe_allow_html=True)
                     activity = st.text_input(f"Class Activity (Row {i})", value=row.get("Activity", ""), key=f"activity_{i}_{selected_class}")
-                    homework = st.text_input(f"Homework (Row {i})", value=row.get("Homework", ""), key=f"homework_{i}_{selected_class}")
                     notes = st.text_area(f"Notes (Row {i})", value=row.get("Notes", ""), key=f"notes_{i}_{selected_class}")
 
+                    status = st.radio(f"Status (Row {i})", ["Upcoming", "Completed", "Missed"], index=["Upcoming", "Completed", "Missed"].index(row.get("Status", "Upcoming")), key=f"status_{i}_{selected_class}")
+
                     curriculum_status[selected_class][i]["Activity"] = activity
-                    curriculum_status[selected_class][i]["Homework"] = homework
                     curriculum_status[selected_class][i]["Notes"] = notes
+                    curriculum_status[selected_class][i]["Status"] = status
 
-                    if st.button(f"✅ Mark as Taught (Row {i})"):
-                        curriculum_status[selected_class][i]["Status"] = "Completed"
-                    if st.button(f"❌ Skip (Row {i})"):
-                        curriculum_status[selected_class][i]["Status"] = "Missed"
-
+                    st.markdown("<div class='add-item'>Add additional notes or changes here.</div>", unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
 
             with open(status_file, 'w') as f:
